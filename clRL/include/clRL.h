@@ -17,6 +17,8 @@ namespace clRL
 	extern cl::CommandQueue queue;
 	extern std::vector<cl::Kernel> kernels;
 
+	void createKernels();
+
 	class Layer
 	{
 	private:

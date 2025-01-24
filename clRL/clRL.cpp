@@ -5,7 +5,7 @@
 #include <random>
 
 #define FLAGS CL_MEM_READ_WRITE
-#define DELTA_ADD_BIAS_KERNEL 0
+#define OUTPUT_ADD_BIAS_KERNEL 0
 #define SUBTRACT_KERNEL 1
 
 namespace clRL
@@ -13,6 +13,14 @@ namespace clRL
 	cl::Context context;
 	cl::CommandQueue queue;
 	std::vector<cl::Kernel> kernels;
+
+	void createKernels()
+	{
+#include "clRL.opencl"
+		cl::Program program(context, source);
+		program.build("-cl-std=CL3.0");
+		program.createKernels(&kernels);
+	}
 
 	Layer::Layer(const size_t& neuron_num, const size_t& input_num, const size_t &batch_size, const unsigned int &seed)
 	{
@@ -53,11 +61,11 @@ namespace clRL
 		);
 
 		// Add bias terms
-		kernels[DELTA_ADD_BIAS_KERNEL].setArg(0, outputs);
-		kernels[DELTA_ADD_BIAS_KERNEL].setArg(1, biases);
-		kernels[DELTA_ADD_BIAS_KERNEL].setArg(2, batch_size);
-		kernels[DELTA_ADD_BIAS_KERNEL].setArg(3, neurons);
-		queue.enqueueNDRangeKernel(kernels[DELTA_ADD_BIAS_KERNEL], 0, cl::NDRange(batch_size, neurons));
+		kernels[OUTPUT_ADD_BIAS_KERNEL].setArg(0, outputs);
+		kernels[OUTPUT_ADD_BIAS_KERNEL].setArg(1, biases);
+		kernels[OUTPUT_ADD_BIAS_KERNEL].setArg(2, batch_size);
+		kernels[OUTPUT_ADD_BIAS_KERNEL].setArg(3, neurons);
+		queue.enqueueNDRangeKernel(kernels[OUTPUT_ADD_BIAS_KERNEL], 0, cl::NDRange(batch_size, neurons));
 
 		return outputs;
 	}
