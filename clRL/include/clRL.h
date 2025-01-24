@@ -3,6 +3,9 @@
 
 #pragma once
 
-#include <iostream>
+#define CL_HPP_TARGET_OPENCL_VERSION 300
 
-// TODO: Reference additional headers your program requires here.
+#include <iostream>
+#include <CL/opencl.hpp>
+#include <clblast.h>
+#include <clEnvironment.h>
