@@ -36,8 +36,8 @@ namespace clRL
 		Layer(const size_t& neuron_num, const size_t& input_num, const size_t& batch_size, const unsigned int& seed = 32);
 
 		const cl::Buffer &runLayer(const cl::Buffer& ins, const size_t& batch_size);
-		const void backProp(const cl::Buffer& ins, cl::Buffer& prev_costs, const size_t& batch_size, const float& a, const float& b);
-		const void backProp(const cl::Buffer& ins, const size_t& batch_size, const float& a, const float& b);
+		void backProp(const cl::Buffer& ins, cl::Buffer& prev_costs, const size_t& batch_size, const float& a, const float& b);
+		void backProp(const cl::Buffer& ins, const size_t& batch_size, const float& a, const float& b);
 
 		~Layer() = default;
 	};

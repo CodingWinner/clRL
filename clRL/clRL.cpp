@@ -70,7 +70,7 @@ namespace clRL
 		return outputs;
 	}
 	
-	const void Layer::backProp(const cl::Buffer& ins, cl::Buffer& prev_costs, const size_t& batch_size, const float& a, const float& b)
+	void Layer::backProp(const cl::Buffer& ins, cl::Buffer& prev_costs, const size_t& batch_size, const float& a, const float& b)
 	{
 		cl_command_queue temp_queue = queue();
 
@@ -111,7 +111,7 @@ namespace clRL
 		queue.enqueueNDRangeKernel(kernels[SUBTRACT_KERNEL], 0, neurons);
 	}
 
-	const void Layer::backProp(const cl::Buffer& ins, const size_t& batch_size, const float& a, const float& b)
+	void Layer::backProp(const cl::Buffer& ins, const size_t& batch_size, const float& a, const float& b)
 	{
 		cl_command_queue temp_queue = queue();
 
