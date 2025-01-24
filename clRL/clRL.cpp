@@ -143,4 +143,28 @@ namespace clRL
 		kernels[SUBTRACT_KERNEL].setArg(2, neurons);
 		queue.enqueueNDRangeKernel(kernels[SUBTRACT_KERNEL], 0, neurons);
 	}
+	
+	Model::Model(const std::vector<size_t>& neurons, const size_t& initial_input_num, const size_t& batch_size, const unsigned int& seed)
+	{
+		layers = std::vector<Layer>(neurons.size());
+		layers[0] = Layer(neurons[0], initial_input_num, batch_size, seed);
+		for (size_t i = 1; i < neurons.size(); i++)
+		{
+			layers[i] = Layer(neurons[i], neurons[i - 1], batch_size, seed);
+		}
+	}
+
+	void Model::train(clEnvironment::Environment&& env, const size_t& num_epochs, const size_t& batch_size)
+	{
+		cl::Buffer temp;
+		for (size_t i = 0; i < num_epochs; i++)
+		{
+			temp = layers[0].runLayer(env.states, batch_size);
+			for (size_t j = 1; j < layers.size(); j++)
+			{
+				layers[i].runLayer(temp, batch_size);
+			}
+		}
+	}
+
 }

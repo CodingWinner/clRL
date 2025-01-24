@@ -41,4 +41,18 @@ namespace clRL
 
 		~Layer() = default;
 	};
+
+	class Model
+	{
+	private:
+		std::vector<Layer> layers;
+
+	public:
+		Model() = default;
+		Model(const std::vector<size_t>& neurons, const size_t& initial_input_num, const size_t& batch_size, const unsigned int& seed);
+
+		void train(clEnvironment::Environment &&env, const size_t &num_epochs, const size_t &batch_size);
+		
+		~Model() = default;
+	};
 }
