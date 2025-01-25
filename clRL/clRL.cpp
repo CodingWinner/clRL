@@ -7,6 +7,7 @@
 #define FLAGS CL_MEM_READ_WRITE
 #define OUTPUT_ADD_BIAS_KERNEL 0
 #define SUBTRACT_KERNEL 1
+#define GET_Q_VAL_KERNEL 2
 
 namespace clRL
 {
@@ -45,6 +46,14 @@ namespace clRL
 		}
 		queue.enqueueWriteBuffer(weights, CL_TRUE, 0, sizeof(float) * neurons * inputs, weight_values);
 		delete[] weight_values;
+	}
+
+	Layer::Layer(const Layer& l)
+	{
+		biases = cl::Buffer(l.biases);
+		weights = cl::Buffer(l.weights);
+		outputs = cl::Buffer(l.outputs);
+		costs = l.costs;
 	}
 
 	const cl::Buffer& Layer::runLayer(const cl::Buffer& ins, const size_t &batch_size)
@@ -154,16 +163,69 @@ namespace clRL
 		}
 	}
 
-	void Model::train(clEnvironment::Environment&& env, const size_t& num_epochs, const size_t& batch_size)
+	Model::Model(const Model&m)
+	{
+		for (size_t i = 0; i < m.layers.size(); i++)
+		{
+			layers.push_back(Layer(m.layers[i]));
+		}
+	}
+
+	void Model::getCosts(clEnvironment::Environment& env, const size_t& batch_size)
+	{
+		cl::Buffer temp = layers[0].runLayer(env.states, batch_size);
+		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
+		size_t num_outputs = layers[layers.size() - 1].neurons;
+		cl_command_queue temp_queue = queue();
+
+		for (size_t j = 1; j < layers.size(); j++)
+		{
+			temp = layers[j].runLayer(temp, batch_size);
+		}
+
+		for (size_t j = 0; j < batch_size; j++)
+		{
+			clblast::Max<float>(num_outputs, actions(), j, temp(), j * num_outputs, 1, &temp_queue);
+		}
+
+		kernels[GET_Q_VAL_KERNEL].setArg(0, temp);
+		kernels[GET_Q_VAL_KERNEL].setArg(1, actions);
+		kernels[GET_Q_VAL_KERNEL].setArg(2, env.reward);
+		kernels[GET_Q_VAL_KERNEL].setArg(3, layers[layers.size() - 1].costs);
+		kernels[GET_Q_VAL_KERNEL].setArg(4, num_outputs);
+		kernels[GET_Q_VAL_KERNEL].setArg(5, batch_size);
+		queue.enqueueNDRangeKernel(kernels[GET_Q_VAL_KERNEL], 0, cl::NDRange(batch_size, num_outputs));
+		queue.finish();
+	}
+
+	void Model::train(clEnvironment::Environment& env, const size_t& num_epochs, const size_t& batch_size, const float& a, const float& b)
 	{
 		cl::Buffer temp;
+		cl::Buffer prev_states;
+		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
+		size_t num_outputs = layers[layers.size() - 1].neurons;
+		cl_command_queue temp_queue = queue();
 		for (size_t i = 0; i < num_epochs; i++)
 		{
 			temp = layers[0].runLayer(env.states, batch_size);
 			for (size_t j = 1; j < layers.size(); j++)
 			{
-				layers[i].runLayer(temp, batch_size);
+				temp = layers[j].runLayer(temp, batch_size);
 			}
+			prev_states = cl::Buffer(env.states);
+
+			for (size_t j = 0; j < batch_size; j++)
+			{
+				clblast::Max<float>(num_outputs, actions(), j, temp(), j * num_outputs, 1, &temp_queue);
+			}
+			env.updateStates(actions);
+			Model m = Model(*this);
+			m.getCosts(env, batch_size);
+			for (size_t j = layers.size() - 1; j > 0; j++)
+			{
+				layers[j].backProp(layers[j - 1].outputs, layers[j-1].costs, batch_size, a, b);
+			}
+			layers[0].backProp(prev_states, batch_size, a, b);
 		}
 	}
 

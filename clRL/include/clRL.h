@@ -26,14 +26,16 @@ namespace clRL
 		cl::Buffer weights;
 		cl::Buffer bias_derivatives;
 		cl::Buffer weight_derivatives;
-		cl::Buffer outputs;
-		cl::Buffer costs;
-		size_t neurons;
 		size_t inputs;
 
 	public:
+		size_t neurons;
+		cl::Buffer outputs;
+		cl::Buffer costs;
+
 		Layer() = default;
 		Layer(const size_t& neuron_num, const size_t& input_num, const size_t& batch_size, const unsigned int& seed = 32);
+		Layer(const Layer& l);
 
 		const cl::Buffer &runLayer(const cl::Buffer& ins, const size_t& batch_size);
 		void backProp(const cl::Buffer& ins, cl::Buffer& prev_costs, const size_t& batch_size, const float& a, const float& b);
@@ -50,8 +52,10 @@ namespace clRL
 	public:
 		Model() = default;
 		Model(const std::vector<size_t>& neurons, const size_t& initial_input_num, const size_t& batch_size, const unsigned int& seed);
+		Model(const Model& m);
 
-		void train(clEnvironment::Environment &&env, const size_t &num_epochs, const size_t &batch_size);
+		void getCosts(clEnvironment::Environment& env, const size_t& batch_size);
+		void train(clEnvironment::Environment &env, const size_t &num_epochs, const size_t &batch_size, const float &a, const float &b);
 		
 		~Model() = default;
 	};
