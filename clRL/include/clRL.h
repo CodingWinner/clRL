@@ -56,6 +56,7 @@ namespace clRL
 
 		void getCosts(clEnvironment::Environment& env, const size_t& batch_size);
 		void train(clEnvironment::Environment &env, const size_t &num_epochs, const size_t &batch_size, const float &a, const float &b);
+		void test(clEnvironment::Environment& env, const size_t& num_epochs, const size_t& batch_size, const std::string& file_name);
 		
 		~Model() = default;
 	};

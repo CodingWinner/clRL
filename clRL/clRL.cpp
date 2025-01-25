@@ -3,6 +3,7 @@
 
 #include "clRL.h"
 #include <random>
+#include <fstream>
 
 #define FLAGS CL_MEM_READ_WRITE
 #define OUTPUT_ADD_BIAS_KERNEL 0
@@ -233,6 +234,39 @@ namespace clRL
 				layers[j].backProp(layers[j - 1].outputs, layers[j-1].costs, batch_size, a, b);
 			}
 			layers[0].backProp(prev_states, batch_size, a, b);
+		}
+	}
+
+	void Model::test(clEnvironment::Environment& env, const size_t& num_epochs, const size_t& batch_size, const std::string &file_name)
+	{
+		cl::Buffer temp;
+		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
+		size_t num_outputs = layers[layers.size() - 1].neurons;
+		cl_command_queue temp_queue = queue();
+		float* rewards;
+		std::ofstream file(file_name);
+		for (size_t i = 0; i < num_epochs; i++)
+		{
+			temp = layers[0].runLayer(env.states, batch_size);
+			for (size_t j = 1; j < layers.size(); j++)
+			{
+				temp = layers[j].runLayer(temp, batch_size);
+			}
+			
+			for (size_t j = 0; j < batch_size; j++)
+			{
+				clblast::Max<float>(num_outputs, actions(), j, temp(), j * num_outputs, 1, &temp_queue);
+			}
+			env.updateStates(actions);
+
+			queue.enqueueReadBuffer(env.reward, CL_TRUE, 0, sizeof(float) * batch_size, rewards);
+
+			file << "Rewards for iteration " << i << ":\n";
+			for (size_t j = 0; j < batch_size; j++)
+			{
+				file << rewards[j] << " ";
+			}
+			file << "-------------------------------------\n";
 		}
 	}
 
