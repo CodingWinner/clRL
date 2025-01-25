@@ -11,4 +11,27 @@ std::string source = R"(
 		if (gid < num_params)
 			params[gid] += derivs[gid];
 	}
+
+	__kernel void QVal(__global const float *all_actions, __global const size_t *indices, __global const float *rewards, 
+						__global float *costs, const size_t num_outputs, const size_t batch_size) 
+						{
+							const size_t gid0 = get_global_id(0);
+							const size_t gid1 = get_global_id(1);
+							if (gid0 < batch_size && gid1 < num_outputs)
+							{
+								costs[gid0 * num_outputs + gid1] = 0.0f;
+								const size_t ridx = indices[gid0];
+								if (gid1 == ridx)
+									costs[gid0 * num_outputs + ridx] = all_actions[gid0 * num_outputs + ridx] + rewards[gid0];
+							}
+						}
+
+	__kernel void loss(__global const float *actions, __global float *costs, const size_t elements)
+	{
+		const size_t gid = get_global_id(0);
+		if (gid < elements)
+		{
+			costs[gid] = pown(costs[gid] - actions[gid], 2);
+		}
+	}
 )";

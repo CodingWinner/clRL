@@ -8,6 +8,7 @@
 #define OUTPUT_ADD_BIAS_KERNEL 0
 #define SUBTRACT_KERNEL 1
 #define GET_Q_VAL_KERNEL 2
+#define CALCULATE_LOSS_KERNEL 3
 
 namespace clRL
 {
@@ -219,9 +220,15 @@ namespace clRL
 				clblast::Max<float>(num_outputs, actions(), j, temp(), j * num_outputs, 1, &temp_queue);
 			}
 			env.updateStates(actions);
+
 			Model m = Model(*this);
 			m.getCosts(env, batch_size);
-			for (size_t j = layers.size() - 1; j > 0; j++)
+			kernels[CALCULATE_LOSS_KERNEL].setArg(0, temp);
+			kernels[CALCULATE_LOSS_KERNEL].setArg(1, layers[layers.size() - 1].costs);
+			kernels[CALCULATE_LOSS_KERNEL].setArg(2, num_outputs * batch_size);
+			queue.enqueueNDRangeKernel(kernels[CALCULATE_LOSS_KERNEL], 0, num_outputs * batch_size);
+			
+			for (size_t j = layers.size() - 1; j > 0; j--)
 			{
 				layers[j].backProp(layers[j - 1].outputs, layers[j-1].costs, batch_size, a, b);
 			}
