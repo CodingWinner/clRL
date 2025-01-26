@@ -5,7 +5,7 @@
 #include <random>
 #include <fstream>
 
-#define FLAGS CL_MEM_READ_WRITE
+#define FLAGS CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR
 #define OUTPUT_ADD_BIAS_KERNEL 0
 #define SUBTRACT_KERNEL 1
 #define GET_Q_VAL_KERNEL 2
