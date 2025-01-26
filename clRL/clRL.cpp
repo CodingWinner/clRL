@@ -20,8 +20,22 @@ namespace clRL
 	void createKernels()
 	{
 #include "include/clRL.opencl"
-		cl::Program program(context, source);
-		program.build("-cl-std=CL3.0");
+		cl::Program program = cl::Program(context, source);
+		try
+		{
+			program.build("-cl-std=CL3.0");
+		}
+		catch (cl::Error e)
+		{
+			std::cout << e.what() << "\nError code: " << e.err() << "\n";
+			if (e.err() == CL_BUILD_PROGRAM_FAILURE)
+			{
+				auto build_log = program.getBuildInfo<CL_PROGRAM_BUILD_LOG>();
+				std::cout << "Build log:\n"
+						  << build_log[0].second << "\n";
+			}
+			return;
+		}
 		program.createKernels(&kernels);
 	}
 
