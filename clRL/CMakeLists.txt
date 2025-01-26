@@ -14,10 +14,15 @@ else()
 	add_library(clRL STATIC clRL.cpp)
 endif()
 
+set(INCLUDE_PATH include)
+if (NOT EXISTS ${INCLUDE_PATH})
+    set(INCLUDE_PATH install/include)
+endif()
+
 target_link_libraries(clRL PUBLIC OpenCL::OpenCL PUBLIC clblast PUBLIC clEnvironment::clEnvironment)
 target_include_directories(clRL PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/${INCLUDE_PATH}>
+    $<INSTALL_INTERFACE:${INCLUDE_PATH}>)
 
 install(TARGETS clRL EXPORT clRLTargets DESTINATION install/lib)
 install(DIRECTORY include/ DESTINATION install/include)
