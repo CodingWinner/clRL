@@ -81,7 +81,7 @@ namespace clRL
 					  batch_size, neurons, inputs, 1.0f,
 					  ins(), 0, inputs,
 					  weights(), 0, neurons,
-					  0.0f, outputs(), 0, batch_size,
+					  0.0f, outputs(), 0, neurons,
 					  &temp_queue);
 
 		// Add bias terms
@@ -103,7 +103,7 @@ namespace clRL
 					  inputs, neurons, batch_size, a,
 					  ins(), 0, batch_size,
 					  costs(), 0, neurons,
-					  b, weight_derivatives(), 0, inputs,
+					  b, weight_derivatives(), 0, neurons,
 					  &temp_queue);
 
 		// Calculate previous layer costs
@@ -111,7 +111,7 @@ namespace clRL
 					  batch_size, inputs, neurons, 1.0f,
 					  costs(), 0, neurons,
 					  weights(), 0, neurons,
-					  0.0f, prev_costs(), 0, batch_size,
+					  0.0f, prev_costs(), 0, inputs,
 					  &temp_queue);
 
 		// Calculate new bias derivatives
@@ -144,7 +144,7 @@ namespace clRL
 					  inputs, neurons, batch_size, a,
 					  ins(), 0, batch_size,
 					  costs(), 0, neurons,
-					  b, weight_derivatives(), 0, inputs,
+					  b, weight_derivatives(), 0, neurons,
 					  &temp_queue);
 
 		// Calculate new bias derivatives
@@ -256,7 +256,7 @@ namespace clRL
 		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
 		size_t num_outputs = layers[layers.size() - 1].neurons;
 		cl_command_queue temp_queue = queue();
-		float *rewards;
+		float *rewards = new float[batch_size];
 		std::ofstream file(file_name);
 		for (size_t i = 0; i < num_epochs; i++)
 		{
