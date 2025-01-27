@@ -188,7 +188,7 @@ namespace clRL
 
 	void Model::getCosts(clEnvironment::Environment &env, const size_t &batch_size)
 	{
-		cl::Buffer temp = layers[0].runLayer(env.states, batch_size);
+		cl::Buffer temp = layers[0].runLayer(env.getStates(), batch_size);
 		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
 		size_t num_outputs = layers[layers.size() - 1].neurons;
 		cl_command_queue temp_queue = queue();
@@ -205,7 +205,7 @@ namespace clRL
 
 		kernels[GET_Q_VAL_KERNEL].setArg(0, temp);
 		kernels[GET_Q_VAL_KERNEL].setArg(1, actions);
-		kernels[GET_Q_VAL_KERNEL].setArg(2, env.reward);
+		kernels[GET_Q_VAL_KERNEL].setArg(2, env.getRewards());
 		kernels[GET_Q_VAL_KERNEL].setArg(3, layers[layers.size() - 1].costs);
 		kernels[GET_Q_VAL_KERNEL].setArg(4, num_outputs);
 		kernels[GET_Q_VAL_KERNEL].setArg(5, batch_size);
@@ -222,12 +222,12 @@ namespace clRL
 		cl_command_queue temp_queue = queue();
 		for (size_t i = 0; i < num_epochs; i++)
 		{
-			temp = layers[0].runLayer(env.states, batch_size);
+			temp = layers[0].runLayer(env.getStates(), batch_size);
 			for (size_t j = 1; j < layers.size(); j++)
 			{
 				temp = layers[j].runLayer(temp, batch_size);
 			}
-			prev_states = cl::Buffer(env.states);
+			prev_states = cl::Buffer(env.getStates());
 
 			for (size_t j = 0; j < batch_size; j++)
 			{
@@ -260,7 +260,7 @@ namespace clRL
 		std::ofstream file(file_name);
 		for (size_t i = 0; i < num_epochs; i++)
 		{
-			temp = layers[0].runLayer(env.states, batch_size);
+			temp = layers[0].runLayer(env.getStates(), batch_size);
 			for (size_t j = 1; j < layers.size(); j++)
 			{
 				temp = layers[j].runLayer(temp, batch_size);
@@ -272,14 +272,14 @@ namespace clRL
 			}
 			env.updateStates(actions);
 
-			queue.enqueueReadBuffer(env.reward, CL_TRUE, 0, sizeof(float) * batch_size, rewards);
+			queue.enqueueReadBuffer(env.getRewards(), CL_TRUE, 0, sizeof(float) * batch_size, rewards);
 
 			file << "Rewards for iteration " << i << ":\n";
 			for (size_t j = 0; j < batch_size; j++)
 			{
 				file << rewards[j] << " ";
 			}
-			file << "-------------------------------------\n";
+			file << "\n-------------------------------------\n";
 		}
 	}
 
