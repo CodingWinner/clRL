@@ -260,6 +260,7 @@ namespace clRL
 		size_t num_outputs = layers[layers.size() - 1].neurons;
 		cl_command_queue temp_queue = queue();
 		float *rewards = new float[batch_size];
+		float *outputs = new float[batch_size * num_outputs];
 		std::ofstream file(file_name);
 		for (size_t i = 0; i < num_epochs; i++)
 		{
@@ -276,6 +277,18 @@ namespace clRL
 			env.updateStates(actions);
 
 			queue.enqueueReadBuffer(env.getRewards(), CL_TRUE, 0, sizeof(float) * batch_size, rewards);
+			queue.enqueueReadBuffer(temp, CL_TRUE, 0, sizeof(float) * batch_size * num_outputs, outputs);
+
+			file << "Target values for iteration " << i << ":\n";
+			for (size_t j = 0; j < batch_size; j++)
+			{
+				file << "{" << outputs[0];
+				for (size_t k = 1; k < num_outputs; k++)
+				{
+					file << ", " << outputs[k];
+				}
+				file << "}	";
+			}
 
 			file << "Rewards for iteration " << i << ":\n";
 			for (size_t j = 0; j < batch_size; j++)
