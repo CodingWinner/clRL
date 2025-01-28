@@ -55,7 +55,7 @@ namespace clRL
 
 		float *weight_values = new float[neurons * inputs];
 		std::mt19937 gen(seed);
-		std::normal_distribution<float> dist(0.0f, std::sqrt(2.0f / inputs));
+		std::normal_distribution<float> dist(0.0f, 2.0f / inputs);
 		for (size_t i = 0; i < neurons * inputs; i++)
 		{
 			weight_values[i] = dist(gen);
