@@ -282,7 +282,7 @@ namespace clRL
 			file << "Target values for iteration " << i << ":\n";
 			for (size_t j = 0; j < batch_size; j++)
 			{
-				file << "{" << outputs[0];
+				file << "{" << outputs[j * num_outputs];
 				for (size_t k = 1; k < num_outputs; k++)
 				{
 					file << ", " << outputs[j * num_outputs + k];
