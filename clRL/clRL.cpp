@@ -70,6 +70,8 @@ namespace clRL
 		weights = cl::Buffer(l.weights);
 		outputs = cl::Buffer(l.outputs);
 		costs = l.costs;
+		neurons = l.neurons;
+		inputs = l.inputs;
 	}
 
 	const cl::Buffer &Layer::runLayer(const cl::Buffer &ins, const size_t &batch_size)
@@ -110,7 +112,7 @@ namespace clRL
 		clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kNo, clblast::Transpose::kYes,
 					  batch_size, inputs, neurons, 1.0f,
 					  costs(), 0, neurons,
-					  weights(), 0, neurons,
+					  weights(), 0, inputs,
 					  0.0f, prev_costs(), 0, inputs,
 					  &temp_queue);
 
@@ -141,7 +143,7 @@ namespace clRL
 
 		// Calculate new weight derivatives
 		clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kYes, clblast::Transpose::kNo,
-					  inputs, neurons, batch_size, a,
+					  batch_size, neurons, inputs, a,
 					  ins(), 0, batch_size,
 					  costs(), 0, neurons,
 					  b, weight_derivatives(), 0, neurons,
@@ -180,6 +182,7 @@ namespace clRL
 
 	Model::Model(const Model &m)
 	{
+		layers = std::vector<Layer>();
 		for (size_t i = 0; i < m.layers.size(); i++)
 		{
 			layers.push_back(Layer(m.layers[i]));
