@@ -22,7 +22,7 @@ std::string source = R"(
 								costs[gid0 * num_outputs + gid1] = 0.0f;
 								const size_t ridx = indices[gid0];
 								if (gid1 == ridx)
-									costs[gid0 * num_outputs + ridx] = all_actions[gid0 * num_outputs + ridx] + rewards[gid0];
+									costs[gid0 * num_outputs + ridx] = fma(0.9f, all_actions[gid0 * num_outputs + ridx], rewards[gid0]);
 							}
 						}
 
@@ -31,7 +31,7 @@ std::string source = R"(
 		const size_t gid = get_global_id(0);
 		if (gid < elements)
 		{
-			costs[gid] = pown(costs[gid] - actions[gid], 2);
+			costs[gid] = pow(costs[gid] - actions[gid], 2.0f);
 		}
 	}
 )";

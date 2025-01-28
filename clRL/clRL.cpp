@@ -102,8 +102,8 @@ namespace clRL
 
 		// Calculate new weight derivatives
 		clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kYes, clblast::Transpose::kNo,
-					  batch_size, neurons, inputs, a,
-					  ins(), 0, batch_size,
+					  inputs, neurons, batch_size, a,
+					  ins(), 0, inputs,
 					  costs(), 0, neurons,
 					  b, weight_derivatives(), 0, neurons,
 					  &temp_queue);
@@ -143,8 +143,8 @@ namespace clRL
 
 		// Calculate new weight derivatives
 		clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kYes, clblast::Transpose::kNo,
-					  batch_size, neurons, inputs, a,
-					  ins(), 0, batch_size,
+					  inputs, neurons, batch_size, a,
+					  ins(), 0, inputs,
 					  costs(), 0, neurons,
 					  b, weight_derivatives(), 0, neurons,
 					  &temp_queue);
