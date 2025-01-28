@@ -285,7 +285,7 @@ namespace clRL
 				file << "{" << outputs[0];
 				for (size_t k = 1; k < num_outputs; k++)
 				{
-					file << ", " << outputs[k];
+					file << ", " << outputs[j * num_outputs + k];
 				}
 				file << "}	";
 			}
@@ -297,6 +297,9 @@ namespace clRL
 			}
 			file << "\n-------------------------------------\n";
 		}
+
+		delete[] rewards;
+		delete[] outputs;
 	}
 
 }
