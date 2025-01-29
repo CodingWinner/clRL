@@ -287,10 +287,10 @@ namespace clRL
 				{
 					file << ", " << outputs[j * num_outputs + k];
 				}
-				file << "}	";
+				file << "}\n";
 			}
 
-			file << "Rewards for iteration " << i << ":\n";
+			file << "\nRewards for iteration " << i << ":\n";
 			for (size_t j = 0; j < batch_size; j++)
 			{
 				file << rewards[j] << " ";
