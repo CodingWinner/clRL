@@ -23,7 +23,7 @@ namespace clRL
 		cl::Program program = cl::Program(context, source);
 		try
 		{
-			program.build("-cl-std=CL3.0");
+			program.build("-cl-std=CL3.0 -cl-finite-math-only");
 		}
 		catch (cl::Error e)
 		{
