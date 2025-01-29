@@ -102,7 +102,7 @@ namespace clRL
 
 		// Calculate new weight derivatives
 		clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kYes, clblast::Transpose::kNo,
-					  inputs, neurons, batch_size, a,
+					  inputs, neurons, batch_size, a / batch_size,
 					  ins(), 0, inputs,
 					  costs(), 0, neurons,
 					  b, weight_derivatives(), 0, neurons,
@@ -119,9 +119,9 @@ namespace clRL
 		// Calculate new bias derivatives
 		clblast::Scal(neurons * batch_size, a, costs(), 0, 1, &temp_queue);
 		clblast::Scal(neurons, b, bias_derivatives(), 0, 1, &temp_queue);
-		for (size_t i = 0; i < neurons; i++)
+		for (size_t i = 0; i < batch_size; i++)
 		{
-			clblast::Sum<float>(batch_size, bias_derivatives(), i, costs(), i, neurons, &temp_queue);
+			clblast::Axpy(neurons, 1.0f / batch_size, costs(), i * neurons, 1, bias_derivatives(), 0, 1, &temp_queue);
 		}
 
 		// Update weight derivatives
@@ -143,7 +143,7 @@ namespace clRL
 
 		// Calculate new weight derivatives
 		clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kYes, clblast::Transpose::kNo,
-					  inputs, neurons, batch_size, a,
+					  inputs, neurons, batch_size, a / batch_size,
 					  ins(), 0, inputs,
 					  costs(), 0, neurons,
 					  b, weight_derivatives(), 0, neurons,
@@ -152,9 +152,9 @@ namespace clRL
 		// Calculate new bias derivatives
 		clblast::Scal(neurons * batch_size, a, costs(), 0, 1, &temp_queue);
 		clblast::Scal(neurons, b, bias_derivatives(), 0, 1, &temp_queue);
-		for (size_t i = 0; i < neurons; i++)
+		for (size_t i = 0; i < batch_size; i++)
 		{
-			clblast::Sum<float>(batch_size, bias_derivatives(), i, costs(), i, neurons, &temp_queue);
+			clblast::Axpy(neurons, 1.0f / batch_size, costs(), i * neurons, 1, bias_derivatives(), 0, 1, &temp_queue);
 		}
 
 		// Update weight derivatives
