@@ -8,8 +8,16 @@ std::string source = R"(
 	__kernel void subtract(__global float *params, __global float *derivs, const size_t num_params)
 	{
 		const size_t gid = get_global_id(0);
-		if (gid < num_params)
+		if (gid < num_params) {
+			if (derivs[gid] > params[gid] * 0.01f) 
+			{
+				derivs[gid] = params[gid] * 0.01f;
+			} else if (-derivs[gid] > params[gid] * 0.01f)
+			{
+				derivs[gid] = params[gid] * -0.01f;
+			}
 			params[gid] += derivs[gid];
+		}
 	}
 
 	__kernel void QVal(__global const float *all_actions, __global const size_t *indices, __global const float *rewards, 
