@@ -218,6 +218,7 @@ namespace clRL
 		kernels[GET_Q_VAL_KERNEL].setArg(5, batch_size);
 		queue.enqueueNDRangeKernel(kernels[GET_Q_VAL_KERNEL], 0, cl::NDRange(batch_size, num_outputs));
 		queue.finish();
+		delete[] acts;
 	}
 
 	void Model::train(clEnvironment::Environment &env, const size_t &num_epochs, const size_t &batch_size, const float &a, const float &b)
@@ -269,6 +270,7 @@ namespace clRL
 			}
 			layers[0].backProp(prev_states, batch_size, a, b);
 		}
+		delete[] acts;
 	}
 
 	void Model::test(clEnvironment::Environment &env, const size_t &num_epochs, const size_t &batch_size, const std::string &file_name)
