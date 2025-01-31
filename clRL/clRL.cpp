@@ -16,6 +16,7 @@ namespace clRL
 	cl::Context context;
 	cl::CommandQueue queue;
 	std::vector<cl::Kernel> kernels;
+	std::mt19937 gen;
 
 	void createKernels()
 	{
@@ -39,7 +40,7 @@ namespace clRL
 		program.createKernels(&kernels);
 	}
 
-	Layer::Layer(const size_t &neuron_num, const size_t &input_num, const size_t &batch_size, const unsigned int &seed)
+	Layer::Layer(const size_t &neuron_num, const size_t &input_num, const size_t &batch_size)
 	{
 		neurons = neuron_num;
 		inputs = input_num;
@@ -54,7 +55,6 @@ namespace clRL
 		queue.enqueueFillBuffer(weight_derivatives, 0.0f, 0, sizeof(float) * neurons * inputs);
 
 		float *weight_values = new float[neurons * inputs];
-		std::mt19937 gen(seed);
 		std::normal_distribution<float> dist(0.0f, 2.0f / inputs);
 		for (size_t i = 0; i < neurons * inputs; i++)
 		{
@@ -172,11 +172,12 @@ namespace clRL
 
 	Model::Model(const std::vector<size_t> &neurons, const size_t &initial_input_num, const size_t &batch_size, const unsigned int &seed)
 	{
+		gen = std::mt19937(seed);
 		layers = std::vector<Layer>(neurons.size());
-		layers[0] = Layer(neurons[0], initial_input_num, batch_size, seed);
+		layers[0] = Layer(neurons[0], initial_input_num, batch_size);
 		for (size_t i = 1; i < neurons.size(); i++)
 		{
-			layers[i] = Layer(neurons[i], neurons[i - 1], batch_size, seed);
+			layers[i] = Layer(neurons[i], neurons[i - 1], batch_size);
 		}
 	}
 
@@ -195,6 +196,9 @@ namespace clRL
 		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
 		size_t num_outputs = layers[layers.size() - 1].neurons;
 		cl_command_queue temp_queue = queue();
+		float *acts = new float[num_outputs * batch_size];
+		std::uniform_int_distribution<size_t> new_action(0, num_outputs);
+		std::uniform_int_distribution<int> do_random(0, 100);
 
 		for (size_t j = 1; j < layers.size(); j++)
 		{
@@ -222,7 +226,10 @@ namespace clRL
 		cl::Buffer prev_states;
 		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
 		size_t num_outputs = layers[layers.size() - 1].neurons;
+		float *acts = new float[num_outputs * batch_size];
 		cl_command_queue temp_queue = queue();
+		std::uniform_int_distribution<size_t> new_action(0, num_outputs);
+		std::uniform_int_distribution<int> do_random(0, 100);
 		for (size_t i = 0; i < num_epochs; i++)
 		{
 			temp = layers[0].runLayer(env.getStates(), batch_size);
@@ -236,6 +243,17 @@ namespace clRL
 			{
 				clblast::Max<float>(num_outputs, actions(), j, temp(), j * num_outputs, 1, &temp_queue);
 			}
+
+			queue.enqueueReadBuffer(actions, CL_TRUE, 0, sizeof(float) * num_outputs * batch_size, acts);
+			for (size_t j = 0; j < batch_size; j++)
+			{
+				if (do_random(gen) > 95)
+				{
+					acts[j] = new_action(gen);
+				}
+			}
+			queue.enqueueWriteBuffer(actions, CL_TRUE, 0, sizeof(float) * num_outputs * batch_size, acts);
+
 			env.updateStates(actions);
 
 			Model m = Model(*this);
@@ -301,5 +319,4 @@ namespace clRL
 		delete[] rewards;
 		delete[] outputs;
 	}
-
 }
