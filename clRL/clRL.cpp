@@ -268,7 +268,7 @@ namespace clRL
 		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
 		size_t num_outputs = layers[layers.size() - 1].neurons;
 		cl_command_queue temp_queue = queue();
-		float *acts = new float[num_outputs * batch_size];
+		size_t *acts = new size_t[num_outputs * batch_size];
 		std::uniform_int_distribution<size_t> new_action(0, num_outputs);
 		std::uniform_int_distribution<int> do_random(0, 100);
 
@@ -281,6 +281,16 @@ namespace clRL
 		{
 			clblast::Max<float>(num_outputs, actions(), j, temp(), j * num_outputs, 1, &temp_queue);
 		}
+
+		queue.enqueueReadBuffer(actions, CL_TRUE, 0, sizeof(size_t) * batch_size, acts);
+		for (size_t j = 0; j < batch_size; j++)
+		{
+			if (do_random(gen) > 95)
+			{
+				acts[j] = new_action(gen);
+			}
+		}
+		queue.enqueueWriteBuffer(actions, CL_TRUE, 0, sizeof(size_t) * batch_size, acts);
 
 		kernels[GET_Q_VAL_KERNEL].setArg(0, temp);
 		kernels[GET_Q_VAL_KERNEL].setArg(1, actions);
