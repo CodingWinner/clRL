@@ -20,7 +20,6 @@ namespace clRL
 	void createKernels()
 	{
 #include "include/clRL.opencl"
-#include "clRL.h"
 		cl::Program program = cl::Program(context, source);
 		try
 		{
