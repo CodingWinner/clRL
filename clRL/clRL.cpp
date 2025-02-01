@@ -2,7 +2,6 @@
 //
 
 #include "include/clRL.h"
-#include <random>
 #include <fstream>
 
 #define FLAGS CL_MEM_READ_WRITE | CL_MEM_ALLOC_HOST_PTR
@@ -225,6 +224,8 @@ namespace clRL
 
 		outputs = l.outputs;
 		costs = l.costs;
+
+		return *this;
 	}
 
 	Model::Model(const std::vector<size_t> &neurons, const size_t &initial_input_num, const size_t &batch_size, const unsigned int &seed)
@@ -415,5 +416,7 @@ namespace clRL
 		{
 			layers[i] = m.layers[i];
 		}
+
+		return *this;
 	}
 }

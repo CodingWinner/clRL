@@ -10,12 +10,14 @@
 #include <CL/opencl.hpp>
 #include <clblast.h>
 #include <clEnvironment.h>
+#include <random>
 
 namespace clRL
 {
 	extern cl::Context context;
 	extern cl::CommandQueue queue;
 	extern std::vector<cl::Kernel> kernels;
+	extern std::mt19937 gen;
 
 	void createKernels();
 
