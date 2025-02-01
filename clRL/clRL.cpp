@@ -299,7 +299,7 @@ namespace clRL
 		cl::Buffer prev_states;
 		cl::Buffer actions(context, FLAGS, batch_size * sizeof(size_t));
 		size_t num_outputs = layers[layers.size() - 1].neurons;
-		float *acts = new float[num_outputs * batch_size];
+		size_t *acts = new size_t[batch_size];
 		cl_command_queue temp_queue = queue();
 		std::uniform_int_distribution<size_t> new_action(0, num_outputs);
 		std::uniform_int_distribution<int> do_random(0, 100);
@@ -317,7 +317,7 @@ namespace clRL
 				clblast::Max<float>(num_outputs, actions(), j, temp(), j * num_outputs, 1, &temp_queue);
 			}
 
-			queue.enqueueReadBuffer(actions, CL_TRUE, 0, sizeof(float) * num_outputs * batch_size, acts);
+			queue.enqueueReadBuffer(actions, CL_TRUE, 0, sizeof(size_t) * batch_size, acts);
 			for (size_t j = 0; j < batch_size; j++)
 			{
 				if (do_random(gen) > 95)
@@ -325,7 +325,7 @@ namespace clRL
 					acts[j] = new_action(gen);
 				}
 			}
-			queue.enqueueWriteBuffer(actions, CL_TRUE, 0, sizeof(float) * num_outputs * batch_size, acts);
+			queue.enqueueWriteBuffer(actions, CL_TRUE, 0, sizeof(size_t) * batch_size, acts);
 
 			env.updateStates(actions);
 
