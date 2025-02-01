@@ -21,6 +21,7 @@ namespace clRL
 	void createKernels()
 	{
 #include "include/clRL.opencl"
+#include "clRL.h"
 		cl::Program program = cl::Program(context, source);
 		try
 		{
@@ -72,6 +73,32 @@ namespace clRL
 		costs = l.costs;
 		neurons = l.neurons;
 		inputs = l.inputs;
+	}
+
+	Layer::Layer(std::ifstream &file, const size_t &batch_size)
+	{
+		file.read(reinterpret_cast<char *>(&neurons), sizeof(neurons));
+		file.read(reinterpret_cast<char *>(&inputs), sizeof(inputs));
+
+		biases = cl::Buffer(context, FLAGS, sizeof(float) * neurons);
+		bias_derivatives = cl::Buffer(context, FLAGS, sizeof(float) * neurons);
+		weights = cl::Buffer(context, FLAGS, sizeof(float) * neurons * inputs);
+		weight_derivatives = cl::Buffer(context, FLAGS, sizeof(float) * neurons * inputs);
+		outputs = cl::Buffer(context, FLAGS, sizeof(float) * neurons * batch_size);
+		costs = cl::Buffer(context, FLAGS, sizeof(float) * neurons * batch_size);
+		queue.enqueueFillBuffer(biases, 0.0f, 0, sizeof(float) * neurons);
+		queue.enqueueFillBuffer(bias_derivatives, 0.0f, 0, sizeof(float) * neurons);
+		queue.enqueueFillBuffer(weight_derivatives, 0.0f, 0, sizeof(float) * neurons * inputs);
+
+		float *read_data = new float[inputs * neurons];
+
+		file.read(reinterpret_cast<char *>(read_data), sizeof(float) * neurons);
+		queue.enqueueWriteBuffer(biases, CL_TRUE, 0, sizeof(float) * neurons, read_data);
+
+		file.read(reinterpret_cast<char *>(read_data), sizeof(float) * neurons * inputs);
+		queue.enqueueWriteBuffer(weights, CL_TRUE, 0, sizeof(float) * neurons * inputs, read_data);
+
+		delete[] read_data;
 	}
 
 	const cl::Buffer &Layer::runLayer(const cl::Buffer &ins, const size_t &batch_size)
@@ -170,6 +197,36 @@ namespace clRL
 		queue.enqueueNDRangeKernel(kernels[SUBTRACT_KERNEL], 0, neurons);
 	}
 
+	void Layer::saveLayer(std::ofstream &file)
+	{
+		file.write(reinterpret_cast<char *>(&neurons), sizeof(neurons));
+		file.write(reinterpret_cast<char *>(&inputs), sizeof(inputs));
+
+		float *write_data = new float[inputs * neurons];
+
+		queue.enqueueReadBuffer(biases, CL_TRUE, 0, sizeof(float) * neurons, write_data);
+		file.write(reinterpret_cast<char *>(write_data), sizeof(float) * neurons);
+
+		queue.enqueueReadBuffer(weights, CL_TRUE, 0, sizeof(float) * neurons * inputs, write_data);
+		file.write(reinterpret_cast<char *>(write_data), sizeof(float) * neurons * inputs);
+
+		delete[] write_data;
+	}
+
+	Layer &Layer::operator=(const Layer &l)
+	{
+		neurons = l.neurons;
+		inputs = l.inputs;
+
+		biases = l.biases;
+		bias_derivatives = l.bias_derivatives;
+		weights = l.weights;
+		weight_derivatives = l.weight_derivatives;
+
+		outputs = l.outputs;
+		costs = l.costs;
+	}
+
 	Model::Model(const std::vector<size_t> &neurons, const size_t &initial_input_num, const size_t &batch_size, const unsigned int &seed)
 	{
 		gen = std::mt19937(seed);
@@ -187,6 +244,21 @@ namespace clRL
 		for (size_t i = 0; i < m.layers.size(); i++)
 		{
 			layers.push_back(Layer(m.layers[i]));
+		}
+	}
+
+	Model::Model(const std::string &file_name, const size_t &batch_size)
+	{
+		std::ifstream file(file_name, std::ios::binary);
+
+		size_t num_layers;
+		file.read(reinterpret_cast<char *>(&num_layers), sizeof(num_layers));
+
+		layers = std::vector<Layer>(num_layers);
+
+		for (size_t i = 0; i < num_layers; i++)
+		{
+			layers[i] = Layer(file, batch_size);
 		}
 	}
 
@@ -320,5 +392,28 @@ namespace clRL
 
 		delete[] rewards;
 		delete[] outputs;
+	}
+
+	void Model::saveModel(const std::string &file_name)
+	{
+		std::ofstream file(file_name, std::ios::binary);
+
+		size_t num_layers = layers.size();
+		file.write(reinterpret_cast<char *>(&num_layers), sizeof(num_layers));
+
+		for (size_t i = 0; i < num_layers; i++)
+		{
+			layers[i].saveLayer(file);
+		}
+	}
+
+	Model &Model::operator=(const Model &m)
+	{
+		layers = std::vector<Layer>(m.layers.size());
+
+		for (size_t i = 0; i < m.layers.size(); i++)
+		{
+			layers[i] = m.layers[i];
+		}
 	}
 }
