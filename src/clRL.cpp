@@ -377,6 +377,8 @@ namespace CLRL
 
     cl_command_queue temp_queue = queue();
 
+    float *outs = new float[num_outputs];
+
     // Execution
     for (size_t i = 0; i < epochs; i++)
     {
@@ -386,74 +388,70 @@ namespace CLRL
         outputs = layers[j].forwardPropagation(outputs, batch_size);
       }
 
-      float *outs = new float[batch_size * num_outputs];
-
-      queue.enqueueReadBuffer(outputs, CL_TRUE, 0, sizeof(float) * batch_size * num_outputs, outs);
-      for (size_t i = 0; i < batch_size; i++)
+      queue.enqueueReadBuffer(outputs, CL_TRUE, 0, sizeof(float) * num_outputs, outs);
+      std::cout << "Outputs for agent 1:\n";
+      for (size_t j = 0; j < num_outputs; j++)
       {
-        std::cout << "Outputs for agent " << i << ":\n";
-        for (size_t j = 0; j < num_outputs; j++)
-        {
-          std::cout << outs[j * batch_size + i] << " ";
-        }
-        std::cout << "\n";
+        std::cout << outs[j * batch_size] << " ";
       }
-
-      delete[] outs;
-
-      for (size_t j = 0; j < batch_size; j++)
-      {
-        clblast::Max<float>(num_outputs, actions(), j, outputs(), j, batch_size, &temp_queue);
-      }
-
-      env.updateStates(actions);
+      std::cout << "\n";
     }
 
-    // Get data
-    float *final_rewards = new float[batch_size];
+    delete[] outs;
 
-    queue.enqueueReadBuffer(env.getRewards(), CL_TRUE, 0, sizeof(float) * batch_size, final_rewards);
-
-    for (size_t i = 0; i < batch_size; i++)
+    for (size_t j = 0; j < batch_size; j++)
     {
-      std::cout << "Reward for agent " << i << " is " << final_rewards[i] << "\n";
+      clblast::Max<float>(num_outputs, actions(), j, outputs(), j, batch_size, &temp_queue);
     }
 
-    delete[] final_rewards;
+    env.updateStates(actions);
   }
 
-  void Agent::save(const std::string &file_name)
+  // Get data
+  float *final_rewards = new float[batch_size];
+
+  queue.enqueueReadBuffer(env.getRewards(), CL_TRUE, 0, sizeof(float) * batch_size, final_rewards);
+
+  for (size_t i = 0; i < batch_size; i++)
   {
-    std::ofstream file(file_name, std::ios::binary);
-    size_t layer_num = layers.size();
-
-    file.write(reinterpret_cast<char *>(&layer_num), sizeof(layer_num));
-
-    layers = std::vector<Layer>(layer_num);
-    for (size_t i = 0; i < layer_num; i++)
-    {
-      layers[i].save(file);
-    }
+    std::cout << "Reward for agent " << i << " is " << final_rewards[i] << "\n";
   }
 
-  void Agent::changeBatchSize(const size_t &batch_size)
+  delete[] final_rewards;
+}
+
+void Agent::save(const std::string &file_name)
+{
+  std::ofstream file(file_name, std::ios::binary);
+  size_t layer_num = layers.size();
+
+  file.write(reinterpret_cast<char *>(&layer_num), sizeof(layer_num));
+
+  layers = std::vector<Layer>(layer_num);
+  for (size_t i = 0; i < layer_num; i++)
   {
-    // Global important variable initialization
-    ones = std::vector<float>(batch_size, 1.0f);
-    bias_offsets = std::vector<size_t>(batch_size, 0);
-    outputs_offsets = std::vector<size_t>(batch_size);
-    std::iota(outputs_offsets.begin(), outputs_offsets.end(), 0);
-
-    // Update layers
-    for (auto layer : layers)
-    {
-      layer.useDifferentBatchSize(batch_size);
-    }
+    layers[i].save(file);
   }
+}
 
-  // Agent getters
-  std::vector<Layer> Agent::getLayers() const { return layers; }
+void Agent::changeBatchSize(const size_t &batch_size)
+{
+  // Global important variable initialization
+  ones = std::vector<float>(batch_size, 1.0f);
+  bias_offsets = std::vector<size_t>(batch_size, 0);
+  outputs_offsets = std::vector<size_t>(batch_size);
+  std::iota(outputs_offsets.begin(), outputs_offsets.end(), 0);
 
-  // Agent setters
-  void Agent::setLayers(const std::vector<Layer> &val) { layers = val; }
+  // Update layers
+  for (auto layer : layers)
+  {
+    layer.useDifferentBatchSize(batch_size);
+  }
+}
+
+// Agent getters
+std::vector<Layer> Agent::getLayers() const { return layers; }
+
+// Agent setters
+void Agent::setLayers(const std::vector<Layer> &val) { layers = val; }
 }
