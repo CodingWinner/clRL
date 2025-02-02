@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(CLRL LANGUAGES CXX VERSION 1.0.1.0)
+project(CLRL LANGUAGES CXX VERSION 1.0.2.0)
 
 # Required packages
 find_package(OpenCL CONFIG REQUIRED)

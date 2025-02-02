@@ -10,8 +10,8 @@
 #include <random>
 #include <fstream>
 
-#define get(type, var) inline type get##var() const
-#define set(type, var) inline void set##var(const type &val)
+#define get(type, var) type get##var() const
+#define set(type, var) void set##var(const type &val)
 
 namespace CLRL
 {
@@ -24,17 +24,17 @@ namespace CLRL
     typedef unsigned int uint;
 
     // Gets important variables for the library
-    inline cl::vector<cl::Kernel> getKernels();
-    inline cl::Context getContext();
-    inline cl::CommandQueue getQueue();
-    inline std::mt19937 getGen();
-    inline std::vector<float> getOnes();
-    inline std::vector<float> getABatched();
-    inline std::vector<size_t> getBiasOffsets();
-    inline std::vector<size_t> getOutputsOffsets();
+    cl::vector<cl::Kernel> getKernels();
+    cl::Context getContext();
+    cl::CommandQueue getQueue();
+    std::mt19937 getGen();
+    std::vector<float> getOnes();
+    std::vector<float> getABatched();
+    std::vector<size_t> getBiasOffsets();
+    std::vector<size_t> getOutputsOffsets();
 
     // Other functions
-    inline void createKernels(const cl::Device &device); // Create the kernels that are used for the library (Context must be set first)
+    void createKernels(const cl::Device &device); // Create the kernels that are used for the library (Context must be set first)
 
     // Sets important variables for the library
     set(cl::vector<cl::Kernel>, Kernels); // Allows manual setting of the kernels used for the library

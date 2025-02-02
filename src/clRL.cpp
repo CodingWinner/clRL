@@ -20,17 +20,17 @@ namespace CLRL
   std::vector<size_t> outputs_offsets;
 
   // Global Getters
-  inline cl::vector<cl::Kernel> getKernels() { return kernels; }
-  inline cl::Context getContext() { return context; }
-  inline cl::CommandQueue getQueue() { return queue; }
-  inline std::mt19937 getGen() { return gen; }
-  inline std::vector<float> getOnes() { return ones; }
-  inline std::vector<float> getABatched() { return a_batched; }
-  inline std::vector<size_t> getBiasOffsets() { return bias_offsets; }
-  inline std::vector<size_t> getOutputsOffsets() { return outputs_offsets; }
+  cl::vector<cl::Kernel> getKernels() { return kernels; }
+  cl::Context getContext() { return context; }
+  cl::CommandQueue getQueue() { return queue; }
+  std::mt19937 getGen() { return gen; }
+  std::vector<float> getOnes() { return ones; }
+  std::vector<float> getABatched() { return a_batched; }
+  std::vector<size_t> getBiasOffsets() { return bias_offsets; }
+  std::vector<size_t> getOutputsOffsets() { return outputs_offsets; }
 
   // Other functions
-  inline void createKernels(const cl::Device &device)
+  void createKernels(const cl::Device &device)
   {
 #include "CLRL/clRL.opencl"
     cl::Program program = cl::Program(context, source);
@@ -41,14 +41,14 @@ namespace CLRL
   }
 
   // Global Setters
-  inline void setKernels(const cl::vector<cl::Kernel> &val) { kernels = val; }
-  inline void setContext(const cl::Context &val) { context = val; }
-  inline void setQueue(const cl::CommandQueue &val) { queue = val; }
-  inline void setGen(const std::mt19937 &val) { gen = val; }
-  inline void setOnes(const std::vector<float> &val) { ones = val; }
-  inline void setABatched(const std::vector<float> &val) { a_batched = val; }
-  inline void setBiasOffsets(const std::vector<size_t> &val) { bias_offsets = val; }
-  inline void setOutputsOffsets(const std::vector<size_t> &val) { outputs_offsets = val; }
+  void setKernels(const cl::vector<cl::Kernel> &val) { kernels = val; }
+  void setContext(const cl::Context &val) { context = val; }
+  void setQueue(const cl::CommandQueue &val) { queue = val; }
+  void setGen(const std::mt19937 &val) { gen = val; }
+  void setOnes(const std::vector<float> &val) { ones = val; }
+  void setABatched(const std::vector<float> &val) { a_batched = val; }
+  void setBiasOffsets(const std::vector<size_t> &val) { bias_offsets = val; }
+  void setOutputsOffsets(const std::vector<size_t> &val) { outputs_offsets = val; }
 
   // Layer constructors
   Layer::Layer(const uint &neuron_num, const uint &input_num, const Activation &activation, const size_t &batch_size) : neurons(neuron_num), input_num(input_num), activation(activation), biases(BUFFER(neurons)), bias_derivatives(BUFFER(neurons)), weights(BUFFER(neurons * input_num)), weight_derivatives(BUFFER(neurons * input_num)), outputs(BUFFER(batch_size * neurons)), costs(BUFFER(batch_size * neurons)) // Sets the variables for the layer
@@ -228,26 +228,26 @@ namespace CLRL
   }
 
   // Layer Getters
-  inline uint Layer::getNeurons() const { return neurons; }
-  inline uint Layer::getInputNum() const { return input_num; }
-  inline Activation Layer::getActivation() const { return activation; }
-  inline cl::Buffer Layer::getBiases() const { return biases; }
-  inline cl::Buffer Layer::getBiasDerivatives() const { return bias_derivatives; }
-  inline cl::Buffer Layer::getWeights() const { return weights; }
-  inline cl::Buffer Layer::getWeightDerivatives() const { return weight_derivatives; }
-  inline cl::Buffer Layer::getOutputs() const { return outputs; }
-  inline cl::Buffer Layer::getCosts() const { return costs; }
+  uint Layer::getNeurons() const { return neurons; }
+  uint Layer::getInputNum() const { return input_num; }
+  Activation Layer::getActivation() const { return activation; }
+  cl::Buffer Layer::getBiases() const { return biases; }
+  cl::Buffer Layer::getBiasDerivatives() const { return bias_derivatives; }
+  cl::Buffer Layer::getWeights() const { return weights; }
+  cl::Buffer Layer::getWeightDerivatives() const { return weight_derivatives; }
+  cl::Buffer Layer::getOutputs() const { return outputs; }
+  cl::Buffer Layer::getCosts() const { return costs; }
 
   // Layer Setters
-  inline void Layer::setNeurons(const uint &val) { neurons = val; }
-  inline void Layer::setInputNum(const uint &val) { input_num = val; }
-  inline void Layer::setActivation(const Activation &val) { activation = val; }
-  inline void Layer::setBiases(const cl::Buffer &val) { biases = val; }
-  inline void Layer::setBiasDerivatives(const cl::Buffer &val) { bias_derivatives = val; }
-  inline void Layer::setWeights(const cl::Buffer &val) { weights = val; }
-  inline void Layer::setWeightDerivatives(const cl::Buffer &val) { weight_derivatives = val; }
-  inline void Layer::setOutputs(const cl::Buffer &val) { outputs = val; }
-  inline void Layer::setCosts(const cl::Buffer &val) { costs = val; }
+  void Layer::setNeurons(const uint &val) { neurons = val; }
+  void Layer::setInputNum(const uint &val) { input_num = val; }
+  void Layer::setActivation(const Activation &val) { activation = val; }
+  void Layer::setBiases(const cl::Buffer &val) { biases = val; }
+  void Layer::setBiasDerivatives(const cl::Buffer &val) { bias_derivatives = val; }
+  void Layer::setWeights(const cl::Buffer &val) { weights = val; }
+  void Layer::setWeightDerivatives(const cl::Buffer &val) { weight_derivatives = val; }
+  void Layer::setOutputs(const cl::Buffer &val) { outputs = val; }
+  void Layer::setCosts(const cl::Buffer &val) { costs = val; }
 
   // Agent constructors
   Agent::Agent(const std::vector<uint> &architecture, const std::vector<Activation> &activations, const uint &initial_input_num, const size_t &batch_size) : layers(architecture.size())
@@ -315,7 +315,8 @@ namespace CLRL
 
       // Get actions
       outputs = layers[0].forwardPropagation(previous_states, batch_size);
-      event.wait();
+      if (i)
+        event.wait();
       for (size_t j = 1; j < layers.size(); j++)
       {
         outputs = layers[j].forwardPropagation(outputs, batch_size);
@@ -436,8 +437,8 @@ namespace CLRL
   }
 
   // Agent getters
-  inline std::vector<Layer> Agent::getLayers() const { return layers; }
+  std::vector<Layer> Agent::getLayers() const { return layers; }
 
   // Agent setters
-  inline void Agent::setLayers(const std::vector<Layer> &val) { layers = val; }
+  void Agent::setLayers(const std::vector<Layer> &val) { layers = val; }
 }
