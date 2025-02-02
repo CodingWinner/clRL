@@ -55,7 +55,7 @@ namespace CLRL
   {
     // Uses He Initialization for the layer
     float *new_weights = new float[input_num * neurons];
-    std::normal_distribution distribution(0.0f, 2.0f / input_num);
+    std::normal_distribution<float> distribution(0.0f, 2.0f / input_num);
 
     for (size_t i = 0; i < input_num * neurons; i++)
     {
@@ -303,7 +303,7 @@ namespace CLRL
 
     const uint num_outputs = layers[layers.size() - 1].getNeurons();
 
-    std::uniform_int_distribution seeds(-1000000, 1000000);
+    std::uniform_int_distribution<int> seeds(-1000000, 1000000);
     a_batched = std::vector<float>(batch_size, a / batch_size);
 
     // Execution
