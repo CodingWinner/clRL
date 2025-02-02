@@ -386,6 +386,21 @@ namespace CLRL
         outputs = layers[j].forwardPropagation(outputs, batch_size);
       }
 
+      float *outs = new float[batch_size * num_outputs];
+
+      queue.enqueueReadBuffer(outputs, CL_TRUE, 0, sizeof(float) * batch_size * num_outputs, outs);
+      for (size_t i = 0; i < batch_size; i++)
+      {
+        std::cout << "Outputs for agent " << i << ":\n";
+        for (size_t j = 0; j < num_outputs; j++)
+        {
+          std::cout << outs[j * batch_size + i] << " ";
+        }
+        std::cout << "\n";
+      }
+
+      delete[] outs;
+
       for (size_t j = 0; j < batch_size; j++)
       {
         clblast::Max<float>(num_outputs, actions(), j, outputs(), j, batch_size, &temp_queue);
