@@ -405,53 +405,52 @@ namespace CLRL
     }
 
     env.updateStates(actions);
+
+    // Get data
+    float *final_rewards = new float[batch_size];
+
+    queue.enqueueReadBuffer(env.getRewards(), CL_TRUE, 0, sizeof(float) * batch_size, final_rewards);
+
+    for (size_t i = 0; i < batch_size; i++)
+    {
+      std::cout << "Reward for agent " << i << " is " << final_rewards[i] << "\n";
+    }
+
+    delete[] final_rewards;
   }
 
-  // Get data
-  float *final_rewards = new float[batch_size];
-
-  queue.enqueueReadBuffer(env.getRewards(), CL_TRUE, 0, sizeof(float) * batch_size, final_rewards);
-
-  for (size_t i = 0; i < batch_size; i++)
+  void Agent::save(const std::string &file_name)
   {
-    std::cout << "Reward for agent " << i << " is " << final_rewards[i] << "\n";
+    std::ofstream file(file_name, std::ios::binary);
+    size_t layer_num = layers.size();
+
+    file.write(reinterpret_cast<char *>(&layer_num), sizeof(layer_num));
+
+    layers = std::vector<Layer>(layer_num);
+    for (size_t i = 0; i < layer_num; i++)
+    {
+      layers[i].save(file);
+    }
   }
 
-  delete[] final_rewards;
-}
-
-void Agent::save(const std::string &file_name)
-{
-  std::ofstream file(file_name, std::ios::binary);
-  size_t layer_num = layers.size();
-
-  file.write(reinterpret_cast<char *>(&layer_num), sizeof(layer_num));
-
-  layers = std::vector<Layer>(layer_num);
-  for (size_t i = 0; i < layer_num; i++)
+  void Agent::changeBatchSize(const size_t &batch_size)
   {
-    layers[i].save(file);
+    // Global important variable initialization
+    ones = std::vector<float>(batch_size, 1.0f);
+    bias_offsets = std::vector<size_t>(batch_size, 0);
+    outputs_offsets = std::vector<size_t>(batch_size);
+    std::iota(outputs_offsets.begin(), outputs_offsets.end(), 0);
+
+    // Update layers
+    for (auto layer : layers)
+    {
+      layer.useDifferentBatchSize(batch_size);
+    }
   }
-}
 
-void Agent::changeBatchSize(const size_t &batch_size)
-{
-  // Global important variable initialization
-  ones = std::vector<float>(batch_size, 1.0f);
-  bias_offsets = std::vector<size_t>(batch_size, 0);
-  outputs_offsets = std::vector<size_t>(batch_size);
-  std::iota(outputs_offsets.begin(), outputs_offsets.end(), 0);
+  // Agent getters
+  std::vector<Layer> Agent::getLayers() const { return layers; }
 
-  // Update layers
-  for (auto layer : layers)
-  {
-    layer.useDifferentBatchSize(batch_size);
-  }
-}
-
-// Agent getters
-std::vector<Layer> Agent::getLayers() const { return layers; }
-
-// Agent setters
-void Agent::setLayers(const std::vector<Layer> &val) { layers = val; }
+  // Agent setters
+  void Agent::setLayers(const std::vector<Layer> &val) { layers = val; }
 }
