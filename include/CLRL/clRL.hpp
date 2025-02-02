@@ -62,6 +62,7 @@ namespace CLRL
 
     public:
         // Basic constructors
+        Layer() = default;
         Layer(const uint &neuron_num, const uint &input_num, const Activation &activation, const size_t &batch_size); // Regular constructor
         Layer(std::ifstream &file, const size_t &batch_size);                                                         // Loads the layer from a binary file
 
@@ -103,6 +104,7 @@ namespace CLRL
 
     public:
         // Basic constructors
+        Agent() = default;
         Agent(const std::vector<uint> &architecture, const std::vector<Activation> &activations, const uint &initial_input_num, const size_t &batch_size); // Regular constructor
         Agent(const std::string &file_name, const size_t &batch_size);                                                                                     // Loads the model from a binary file
 
