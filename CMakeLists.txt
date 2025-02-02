@@ -29,11 +29,11 @@ write_basic_package_version_file(
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/CLRLConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/CLRLConfig.cmake"
-    INSTALL_DESTINATION install/lib/cmake/CLRL
+    INSTALL_DESTINATION lib/cmake/CLRL
 )
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/CLRLConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/CLRLConfigVersion.cmake"
-    DESTINATION install/lib/cmake/CLRL
+    DESTINATION lib/cmake/CLRL
 )
