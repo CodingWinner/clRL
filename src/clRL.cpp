@@ -169,10 +169,10 @@ namespace CLRL
                   &temp_queue);
 
     // Update weights
-    clblast::Axpy(neurons * input_num, -1.0f, weight_derivatives(), 0, 1, weights(), 0, 1, &temp_queue);
+    clblast::Axpy(neurons * input_num, -a, weight_derivatives(), 0, 1, weights(), 0, 1, &temp_queue);
 
     // Update biases
-    clblast::Axpy(neurons, -1.0f, bias_derivatives(), 0, 1, biases(), 0, 1, &temp_queue);
+    clblast::Axpy(neurons, -a, bias_derivatives(), 0, 1, biases(), 0, 1, &temp_queue);
   }
 
   void Layer::backwardPropagation(const cl::Buffer &inputs, const float &a, const float &b, const size_t &batch_size)
@@ -193,10 +193,10 @@ namespace CLRL
     clblast::AxpyBatched(neurons, a_batched.data(), costs(), outputs_offsets.data(), batch_size, bias_derivatives(), bias_offsets.data(), 1, batch_size, &temp_queue);
 
     // Update weights
-    clblast::Axpy(neurons * input_num, -1.0f, weight_derivatives(), 0, 1, weights(), 0, 1, &temp_queue);
+    clblast::Axpy(neurons * input_num, -a, weight_derivatives(), 0, 1, weights(), 0, 1, &temp_queue);
 
     // Update biases
-    clblast::Axpy(neurons, -1.0f, bias_derivatives(), 0, 1, biases(), 0, 1, &temp_queue);
+    clblast::Axpy(neurons, -a, bias_derivatives(), 0, 1, biases(), 0, 1, &temp_queue);
   }
 
   void Layer::save(std::ofstream &file)
@@ -304,7 +304,9 @@ namespace CLRL
     const uint num_outputs = layers[layers.size() - 1].getNeurons();
 
     std::uniform_int_distribution<int> seeds(-1000000, 1000000);
-    a_batched = std::vector<float>(batch_size, a / batch_size);
+    a_batched = std::vector<float>(batch_size, (1.0f - b));
+
+    float averaged_a = a / batch_size;
 
     // Execution
     for (size_t i = 0; i < epochs; i++)
@@ -348,6 +350,8 @@ namespace CLRL
         clblast::Max<float>(num_outputs, otherActions(), j, otherOutputs(), j, batch_size, &temp_queue);
       }
 
+      queue.enqueueFillBuffer(layers[layers.size() - 1].getCosts(), 0.0f, 0, sizeof(float) * num_outputs * batch_size);
+
       // Get costs for output layer
       LOSS_KERNEL.setArg(0, otherOutputs);
       LOSS_KERNEL.setArg(1, outputs);
@@ -361,10 +365,12 @@ namespace CLRL
       // Back prop
       for (size_t j = layers.size() - 1; j > 0; j--)
       {
-        layers[j].backwardPropagation(layers[j - 1].getOutputs(), layers[j - 1].getCosts(), a, b, batch_size);
+        layers[j].backwardPropagation(layers[j - 1].getOutputs(), layers[j - 1].getCosts(), averaged_a, b, batch_size);
       }
-      layers[0].backwardPropagation(previous_states, a, b, batch_size);
+      layers[0].backwardPropagation(previous_states, averaged_a, b, batch_size);
     }
+
+    queue.finish();
   }
 
   void Agent::test(const size_t &epochs, const size_t &batch_size, clEnvironment::Environment &env)
@@ -388,6 +394,13 @@ namespace CLRL
         outputs = layers[j].forwardPropagation(outputs, batch_size);
       }
 
+      for (size_t j = 0; j < batch_size; j++)
+      {
+        clblast::Max<float>(num_outputs, actions(), j, outputs(), j, batch_size, &temp_queue);
+      }
+
+      env.updateStates(actions);
+
       queue.enqueueReadBuffer(outputs, CL_TRUE, 0, sizeof(float) * num_outputs, outs);
       std::cout << "Outputs for agent 1:\n";
       for (size_t j = 0; j < num_outputs; j++)
@@ -398,13 +411,6 @@ namespace CLRL
     }
 
     delete[] outs;
-
-    for (size_t j = 0; j < batch_size; j++)
-    {
-      clblast::Max<float>(num_outputs, actions(), j, outputs(), j, batch_size, &temp_queue);
-    }
-
-    env.updateStates(actions);
 
     // Get data
     float *final_rewards = new float[batch_size];
@@ -426,7 +432,6 @@ namespace CLRL
 
     file.write(reinterpret_cast<char *>(&layer_num), sizeof(layer_num));
 
-    layers = std::vector<Layer>(layer_num);
     for (size_t i = 0; i < layer_num; i++)
     {
       layers[i].save(file);
