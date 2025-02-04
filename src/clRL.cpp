@@ -373,7 +373,7 @@ namespace CLRL
     queue.finish();
   }
 
-  void Agent::test(const size_t &epochs, const size_t &batch_size, clEnvironment::Environment &env)
+  std::string Agent::test(const size_t &epochs, const size_t &batch_size, clEnvironment::Environment &env)
   {
     // Vars
     cl::Buffer outputs;
@@ -409,12 +409,18 @@ namespace CLRL
 
     queue.enqueueReadBuffer(env.getRewards(), CL_TRUE, 0, sizeof(float) * batch_size, final_rewards);
 
+    std::string output = "";
+
     for (size_t i = 0; i < batch_size; i++)
     {
-      std::cout << "Reward for agent " << i << " is " << final_rewards[i] << "\n";
+      output += "Reward for agent " + std::to_string(i) + " is " + std::to_string(final_rewards[i]) + "\n";
     }
 
+    std::cout << output;
+
     delete[] final_rewards;
+
+    return output;
   }
 
   void Agent::save(const std::string &file_name)
