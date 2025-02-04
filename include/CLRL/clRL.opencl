@@ -19,7 +19,7 @@ __kernel void explore(__global uint *actions, const int seed, const uint max_val
     val ^= (val >> 21);
     val ^= (val << 35);
     val ^= (val >> 4);
-    actions[get_global_id(0)] = (val % (max_val + 1));
+    actions[get_global_id(0)] = (val % max_val);
   }
 }
 

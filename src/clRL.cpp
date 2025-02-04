@@ -303,7 +303,7 @@ namespace CLRL
 
     const uint num_outputs = layers[layers.size() - 1].getNeurons();
 
-    std::uniform_int_distribution<int> seeds(-1000000, 1000000);
+    // std::uniform_int_distribution<int> seeds(-1000000, 1000000);
     a_batched = std::vector<float>(batch_size, (1.0f - b));
 
     float averaged_a = a / batch_size;
@@ -330,10 +330,10 @@ namespace CLRL
       }
 
       // Exploration vs exploitation trade off
-      EXPLORATION_KERNEL.setArg(0, actions);
-      EXPLORATION_KERNEL.setArg(1, seeds(gen));
-      EXPLORATION_KERNEL.setArg(2, num_outputs);
-      queue.enqueueNDRangeKernel(EXPLORATION_KERNEL, 0, batch_size);
+      // EXPLORATION_KERNEL.setArg(0, actions);
+      // EXPLORATION_KERNEL.setArg(1, seeds(gen));
+      // EXPLORATION_KERNEL.setArg(2, num_outputs);
+      // queue.enqueueNDRangeKernel(EXPLORATION_KERNEL, 0, batch_size);
 
       // Update environment
       env.updateStates(actions);
