@@ -400,14 +400,6 @@ namespace CLRL
       }
 
       env.updateStates(actions);
-
-      queue.enqueueReadBuffer(outputs, CL_TRUE, 0, sizeof(float) * num_outputs, outs);
-      std::cout << "Outputs for agent 1:\n";
-      for (size_t j = 0; j < num_outputs; j++)
-      {
-        std::cout << outs[j * batch_size] << " ";
-      }
-      std::cout << "\n";
     }
 
     delete[] outs;
