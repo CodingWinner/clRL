@@ -373,6 +373,102 @@ namespace CLRL
     queue.finish();
   }
 
+  std::string Agent::train_test(const size_t &epochs, const size_t &batch_size, clEnvironment::Environment &env, const float &a, const float &b)
+  {
+    // Vars
+    cl::Buffer outputs;
+    cl::Buffer otherOutputs;
+    cl::Buffer actions = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(uint) * batch_size);
+    cl::Buffer otherActions = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(uint) * batch_size);
+    cl::Buffer previous_states;
+    cl::Event event;
+    cl_command_queue temp_queue = queue();
+
+    const uint num_outputs = layers[layers.size() - 1].getNeurons();
+
+    std::uniform_int_distribution<int> seeds(0, 200);
+    a_batched = std::vector<float>(batch_size, (1.0f - b));
+
+    float averaged_a = a / batch_size;
+
+    // Execution
+    for (size_t i = 0; i < epochs; i++)
+    {
+      previous_states = cl::Buffer(env.getStates());
+      if (i && layers.size() == 1)
+        event.wait();
+
+      // Get actions
+      outputs = layers[0].forwardPropagation(previous_states, batch_size);
+      if (i)
+        event.wait();
+      for (size_t j = 1; j < layers.size(); j++)
+      {
+        outputs = layers[j].forwardPropagation(outputs, batch_size);
+      }
+
+      for (size_t j = 0; j < batch_size; j++)
+      {
+        clblast::Max<float>(num_outputs, actions(), j, outputs(), j, batch_size, &temp_queue);
+      }
+
+      // Exploration vs exploitation trade off
+      EXPLORATION_KERNEL.setArg(0, actions);
+      EXPLORATION_KERNEL.setArg(1, seeds(gen));
+      EXPLORATION_KERNEL.setArg(2, num_outputs);
+      queue.enqueueNDRangeKernel(EXPLORATION_KERNEL, 0, batch_size);
+
+      // Update environment
+      env.updateStates(actions);
+
+      // Run again but no trade off and no update
+      otherOutputs = layers[0].forwardPropagation(env.getStates(), batch_size);
+      for (size_t j = 1; j < layers.size(); j++)
+      {
+        otherOutputs = layers[j].forwardPropagation(otherOutputs, batch_size);
+      }
+
+      for (size_t j = 0; j < batch_size; j++)
+      {
+        clblast::Max<float>(num_outputs, otherActions(), j, otherOutputs(), j, batch_size, &temp_queue);
+      }
+
+      queue.enqueueFillBuffer(layers[layers.size() - 1].getCosts(), 0.0f, 0, sizeof(float) * num_outputs * batch_size);
+
+      // Get costs for output layer
+      LOSS_KERNEL.setArg(0, otherOutputs);
+      LOSS_KERNEL.setArg(1, outputs);
+      LOSS_KERNEL.setArg(2, env.getRewards());
+      LOSS_KERNEL.setArg(3, layers[layers.size() - 1].getCosts());
+      LOSS_KERNEL.setArg(4, otherActions);
+      LOSS_KERNEL.setArg(5, actions);
+      LOSS_KERNEL.setArg(6, batch_size);
+      queue.enqueueNDRangeKernel(LOSS_KERNEL, 0, batch_size, cl::NullRange, nullptr, &event);
+
+      // Back prop
+      for (size_t j = layers.size() - 1; j > 0; j--)
+      {
+        layers[j].backwardPropagation(layers[j - 1].getOutputs(), layers[j - 1].getCosts(), averaged_a, b, batch_size);
+      }
+      layers[0].backwardPropagation(previous_states, averaged_a, b, batch_size);
+    }
+
+    float *final_rewards = new float[batch_size];
+
+    queue.enqueueReadBuffer(env.getRewards(), CL_TRUE, 0, sizeof(float) * batch_size, final_rewards);
+
+    std::string output = "";
+
+    for (size_t i = 0; i < batch_size; i++)
+    {
+      output += "Reward for agent " + std::to_string(i) + " is " + std::to_string(final_rewards[i]) + "\n";
+    }
+
+    delete[] final_rewards;
+
+    return output;
+  }
+
   std::string Agent::test(const size_t &epochs, const size_t &batch_size, clEnvironment::Environment &env)
   {
     // Vars

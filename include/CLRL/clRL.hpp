@@ -110,6 +110,7 @@ namespace CLRL
 
         // Functions for functionality
         void train(const size_t &epochs, const size_t &batch_size, clEnvironment::Environment &env, const float &a, const float &b);
+        std::string train_test(const size_t &epochs, const size_t &batch_size, clEnvironment::Environment &env, const float &a, const float &b);
         std::string test(const size_t &epochs, const size_t &batch_size, clEnvironment::Environment &env);
         void save(const std::string &file_name);
         void changeBatchSize(const size_t &batch_size);
