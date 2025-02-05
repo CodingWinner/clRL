@@ -416,8 +416,6 @@ namespace CLRL
       output += "Reward for agent " + std::to_string(i) + " is " + std::to_string(final_rewards[i]) + "\n";
     }
 
-    std::cout << output;
-
     delete[] final_rewards;
 
     return output;
