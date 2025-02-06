@@ -312,13 +312,13 @@ namespace CLRL
     for (size_t i = 0; i < epochs; i++)
     {
       previous_states = cl::Buffer(env.getStates());
-      if (i && layers.size() == 1)
-        event.wait();
+      // if (i && layers.size() == 1)
+      //   event.wait();
 
       // Get actions
       outputs = layers[0].forwardPropagation(previous_states, batch_size);
-      if (i)
-        event.wait();
+      // if (i)
+      //   event.wait();
       for (size_t j = 1; j < layers.size(); j++)
       {
         outputs = layers[j].forwardPropagation(outputs, batch_size);
@@ -381,7 +381,6 @@ namespace CLRL
     cl::Buffer actions = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(uint) * batch_size);
     cl::Buffer otherActions = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(uint) * batch_size);
     cl::Buffer previous_states;
-    cl::Event event;
     cl_command_queue temp_queue = queue();
 
     const uint num_outputs = layers[layers.size() - 1].getNeurons();
@@ -395,13 +394,9 @@ namespace CLRL
     for (size_t i = 0; i < epochs; i++)
     {
       previous_states = cl::Buffer(env.getStates());
-      if (i && layers.size() == 1)
-        event.wait();
 
       // Get actions
       outputs = layers[0].forwardPropagation(previous_states, batch_size);
-      if (i)
-        event.wait();
       for (size_t j = 1; j < layers.size(); j++)
       {
         outputs = layers[j].forwardPropagation(outputs, batch_size);
@@ -443,7 +438,7 @@ namespace CLRL
       LOSS_KERNEL.setArg(4, otherActions);
       LOSS_KERNEL.setArg(5, actions);
       LOSS_KERNEL.setArg(6, batch_size);
-      queue.enqueueNDRangeKernel(LOSS_KERNEL, 0, batch_size, cl::NullRange, nullptr, &event);
+      queue.enqueueNDRangeKernel(LOSS_KERNEL, 0, batch_size);
 
       // Back prop
       for (size_t j = layers.size() - 1; j > 0; j--)
