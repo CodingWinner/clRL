@@ -126,14 +126,14 @@ namespace CLRL
     {
     case LINEAR:
     {
-      queue.enqueueFillBuffer(costs, 1.0f, 0, sizeof(float) * neurons * batch_size);
+      queue.enqueueFillBuffer(costs, 1.0f, 0, sizeof(float) * neurons * batch_size, nullptr, &event);
       break;
     }
     case LEAKY_RELU:
     {
       LEAKY_RELU_KERNEL.setArg(0, outputs);
       LEAKY_RELU_KERNEL.setArg(1, costs);
-      queue.enqueueNDRangeKernel(LEAKY_RELU_KERNEL, 0, neurons * batch_size);
+      queue.enqueueNDRangeKernel(LEAKY_RELU_KERNEL, 0, neurons * batch_size, cl::NullRange, nullptr, &event);
       break;
     }
     }
@@ -146,57 +146,63 @@ namespace CLRL
   {
     cl_command_queue temp_queue = queue();
 
-    // Calculate weight derivatives
-    clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kNo, clblast::Transpose::kYes,
-                  neurons, input_num, batch_size,
-                  a_batched[0],
-                  costs(), 0, batch_size,
-                  inputs(), 0, batch_size,
-                  b, weight_derivatives(), 0, input_num,
-                  &temp_queue);
+    if (event.getInfo<CL_EVENT_COMMAND_EXECUTION_STATUS>() == CL_COMPLETE)
+    {
+      // Calculate weight derivatives
+      clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kNo, clblast::Transpose::kYes,
+                    neurons, input_num, batch_size,
+                    a_batched[0],
+                    costs(), 0, batch_size,
+                    inputs(), 0, batch_size,
+                    b, weight_derivatives(), 0, input_num,
+                    &temp_queue);
 
-    // Calculate bias derivatives
-    clblast::Scal(neurons, b, bias_derivatives(), 0, 1, &temp_queue);
-    clblast::AxpyBatched(neurons, a_batched.data(), costs(), outputs_offsets.data(), batch_size, bias_derivatives(), bias_offsets.data(), 1, batch_size, &temp_queue);
+      // Calculate bias derivatives
+      clblast::Scal(neurons, b, bias_derivatives(), 0, 1, &temp_queue);
+      clblast::AxpyBatched(neurons, a_batched.data(), costs(), outputs_offsets.data(), batch_size, bias_derivatives(), bias_offsets.data(), 1, batch_size, &temp_queue);
 
-    // Calculate previous layer costs
-    clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kYes, clblast::Transpose::kNo,
-                  input_num, batch_size, neurons,
-                  1.0f,
-                  weights(), 0, input_num,
-                  costs(), 0, batch_size,
-                  0.0f, previous_layer_costs(), 0, batch_size,
-                  &temp_queue);
+      // Calculate previous layer costs
+      clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kYes, clblast::Transpose::kNo,
+                    input_num, batch_size, neurons,
+                    1.0f,
+                    weights(), 0, input_num,
+                    costs(), 0, batch_size,
+                    0.0f, previous_layer_costs(), 0, batch_size,
+                    &temp_queue);
 
-    // Update weights
-    clblast::Axpy(neurons * input_num, -a, weight_derivatives(), 0, 1, weights(), 0, 1, &temp_queue);
+      // Update weights
+      clblast::Axpy(neurons * input_num, -a, weight_derivatives(), 0, 1, weights(), 0, 1, &temp_queue);
 
-    // Update biases
-    clblast::Axpy(neurons, -a, bias_derivatives(), 0, 1, biases(), 0, 1, &temp_queue);
+      // Update biases
+      clblast::Axpy(neurons, -a, bias_derivatives(), 0, 1, biases(), 0, 1, &temp_queue);
+    }
   }
 
   void Layer::backwardPropagation(const cl::Buffer &inputs, const float &a, const float &b, const size_t &batch_size)
   {
-    cl_command_queue temp_queue = queue();
+    if (cl::Event(event).getInfo<CL_EVENT_COMMAND_EXECUTION_STATUS>() == CL_COMPLETE)
+    {
+      cl_command_queue temp_queue = queue();
 
-    // Calculate weight derivatives
-    clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kNo, clblast::Transpose::kYes,
-                  neurons, input_num, batch_size,
-                  a_batched[0],
-                  costs(), 0, batch_size,
-                  inputs(), 0, batch_size,
-                  b, weight_derivatives(), 0, input_num,
-                  &temp_queue);
+      // Calculate weight derivatives
+      clblast::Gemm(clblast::Layout::kRowMajor, clblast::Transpose::kNo, clblast::Transpose::kYes,
+                    neurons, input_num, batch_size,
+                    a_batched[0],
+                    costs(), 0, batch_size,
+                    inputs(), 0, batch_size,
+                    b, weight_derivatives(), 0, input_num,
+                    &temp_queue);
 
-    // Calculate bias derivatives
-    clblast::Scal(neurons, b, bias_derivatives(), 0, 1, &temp_queue);
-    clblast::AxpyBatched(neurons, a_batched.data(), costs(), outputs_offsets.data(), batch_size, bias_derivatives(), bias_offsets.data(), 1, batch_size, &temp_queue);
+      // Calculate bias derivatives
+      clblast::Scal(neurons, b, bias_derivatives(), 0, 1, &temp_queue);
+      clblast::AxpyBatched(neurons, a_batched.data(), costs(), outputs_offsets.data(), batch_size, bias_derivatives(), bias_offsets.data(), 1, batch_size, &temp_queue);
 
-    // Update weights
-    clblast::Axpy(neurons * input_num, -a, weight_derivatives(), 0, 1, weights(), 0, 1, &temp_queue);
+      // Update weights
+      clblast::Axpy(neurons * input_num, -a, weight_derivatives(), 0, 1, weights(), 0, 1, &temp_queue);
 
-    // Update biases
-    clblast::Axpy(neurons, -a, bias_derivatives(), 0, 1, biases(), 0, 1, &temp_queue);
+      // Update biases
+      clblast::Axpy(neurons, -a, bias_derivatives(), 0, 1, biases(), 0, 1, &temp_queue);
+    }
   }
 
   void Layer::save(std::ofstream &file)

@@ -52,6 +52,7 @@ namespace CLRL
         uint neurons;          // Number of neurons in the layer
         uint input_num;        // Number of inputs for the layer
         Activation activation; // Activation of the layer
+        cl::Event event;
 
         cl::Buffer biases;             // Vector of dimensions neurons
         cl::Buffer bias_derivatives;   // Vector of dimensions neurons
